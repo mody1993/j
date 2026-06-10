@@ -3,126 +3,161 @@ import wolfjs from 'wolf.js';
 
 const { WOLF } = wolfjs;
 
-const settings = {
-    identity: process.env.U_MAIL,
-    secret: process.env.U_PASS,
-    targetBotId: 39369782 , 
-    actionWord: "!اسرق 5",
-    delayBetweenHeists: 11000,      // 11 ثانية فاصل بين الصيد
-    workDuration: 54 * 60 * 1000,   // 54 دقيقة عمل
-    restDuration: 6 * 60 * 1000     // 6 دقائق راحة
-};
+const accounts = [
+  { identity: process.env.U1_MAIL, secret: process.env.U1_PASS },
+  { identity: process.env.U2_MAIL, secret: process.env.U2_PASS },
+  { identity: process.env.U3_MAIL, secret: process.env.U3_PASS },
+  { identity: process.env.U4_MAIL, secret: process.env.U4_PASS },
+  { identity: process.env.U5_MAIL, secret: process.env.U5_PASS },
+  { identity: process.env.U6_MAIL, secret: process.env.U6_PASS },
+  { identity: process.env.U7_MAIL, secret: process.env.U7_PASS },
+  { identity: process.env.U8_MAIL, secret: process.env.U8_PASS },
+  { identity: process.env.U9_MAIL, secret: process.env.U9_PASS },
+  { identity: process.env.U10_MAIL, secret: process.env.U10_PASS },
+  { identity: process.env.U11_MAIL, secret: process.env.U11_PASS },
+  { identity: process.env.U12_MAIL, secret: process.env.U12_PASS }
+];
 
-const service = new WOLF();
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-let heistQueue = [];
-let isProcessing = false;
-let isResting = false;
+// =====================
+// 🔥 استخراج Room ID
+// =====================
+function extractRoomId(text = "") {
+  const cleaned = text.replace(/[\u200B-\u200F\uFEFF]/g, '');
+  const match = cleaned.match(/ID\s*(\d{5,})|\((\d{5,})\)/);
+  const id = match?.[1] || match?.[2];
+  return id ? parseInt(id, 10) : null;
+}
 
-// دالة معالجة الطابور مع نظام فحص التوافق التلقائي
-const processQueue = async () => {
-    if (isProcessing || heistQueue.length === 0 || isResting) return;
+// =====================
+// 🤖 كل حساب مستقل
+// =====================
+accounts.forEach((acc, index) => {
 
+  const service = new WOLF();
+
+  // 📦 طابور + منع تكرار لكل حساب
+  let queue = [];
+  let queueSet = new Set(); // لمنع التكرار
+  let isProcessing = false;
+
+  // ⏱️ نظام الراحة
+  let isResting = false;
+
+  const WORK_TIME = 54 * 60 * 1000;
+  const REST_TIME = 6 * 60 * 1000;
+  const DELAY = 12000;
+
+  // =====================
+  // 📥 إضافة للروم (بدون تكرار + أولوية جديدة)
+  // =====================
+  function addToQueue(roomId) {
+    if (!roomId) return;
+
+    // 🔴 منع التكرار
+    if (queueSet.has(roomId)) return;
+
+    queueSet.add(roomId);
+
+    // 🔥 أولوية للرومات الجديدة (تدخل أول الطابور)
+    queue.unshift(roomId);
+  }
+
+  // =====================
+  // 🔁 تنفيذ الطابور
+  // =====================
+  async function processQueue() {
+    if (isProcessing) return;
     isProcessing = true;
 
-    while (heistQueue.length > 0 && !isResting) {
-        const roomId = heistQueue.shift();
-        
-        console.log(`⏳ انتظار الاستراحة بين الصيد... الروم: ${roomId}`);
-        await sleep(settings.delayBetweenHeists);
+    while (queue.length > 0) {
 
-        if (isResting) {
-            heistQueue.unshift(roomId); 
-            break;
+      if (isResting) break;
+
+      const roomId = queue.shift();
+      queueSet.delete(roomId); // إزالة من قائمة التكرار
+
+      try {
+        if (service.groups?.join) {
+          await service.groups.join(roomId);
+        } else if (service.group?.join) {
+          await service.group.join(roomId);
+        } else if (service.joinGroup) {
+          await service.joinGroup(roomId);
         }
 
-        try {
-            // نظام فحص إصدار المكتبة للانضمام للروم
-            if (service.groups && typeof service.groups.join === 'function') {
-                await service.groups.join(roomId).catch(() => {});
-            } else if (service.group && typeof service.group.join === 'function') {
-                await service.group.join(roomId).catch(() => {});
-            } else if (typeof service.joinGroup === 'function') {
-                await service.joinGroup(roomId).catch(() => {});
-            }
+        await service.messaging.sendGroupMessage(roomId, "!اسرق 5");
 
-            // إرسال رسالة الصيد
-            await service.messaging.sendGroupMessage(roomId, settings.actionWord);
-            console.log(`🚀 [${new Date().toLocaleTimeString('ar-SA')}] تم الصيد في [${roomId}]. المتبقي في الطابور: ${heistQueue.length}`);
-        } catch (err) {
-            console.error(`❌ فشل الصيد في الروم ${roomId}: ${err.message}`);
-        }
+        console.log(`🚀 [${index + 1}] نفذ على ${roomId}`);
+
+      } catch (err) {
+        console.log(`❌ [${index + 1}] خطأ:`, err.message);
+      }
+
+      await sleep(DELAY);
     }
 
     isProcessing = false;
-};
+  }
 
-// نظام إدارة الوقت (54/6)
-const manageWorkCycle = async () => {
+  // =====================
+  // 📩 استقبال الرسائل
+  // =====================
+  service.on('message', async (message) => {
+    if (message.isGroup) return;
+
+    const content =
+      message.body ||
+      message.content ||
+      message.text ||
+      message.message ||
+      "";
+
+    const isBonus =
+      content.includes("Bonus-Heist") ||
+      content.includes("معزز") ||
+      content.includes("Heist") ||
+      content.includes("معزز إضافي");
+
+    if (!isBonus) return;
+
+    const roomId = extractRoomId(content);
+    if (!roomId) return;
+
+    console.log(`📥 [${index + 1}] استلم: ${roomId}`);
+
+    addToQueue(roomId);
+
+    if (!isResting) {
+      processQueue();
+    }
+  });
+
+  // =====================
+  // ⏱️ دورة 54 / 6
+  // =====================
+  async function cycle() {
     while (true) {
-        console.log("🟢 [نظام الوقت] بدأت دورة الـ 54 دقيقة عمل.");
-        isResting = false;
-        processQueue(); 
 
-        await sleep(settings.workDuration);
+      console.log(`🟢 [${index + 1}] تشغيل 54 دقيقة`);
+      isResting = false;
 
-        console.log("🛑 [نظام الوقت] بدأت دورة الـ 6 دقائق راحة. يتوقف الصيد مؤقتاً.");
-        isResting = true;
-        
-        await sleep(settings.restDuration);
+      processQueue();
+
+      await sleep(WORK_TIME);
+
+      console.log(`🛑 [${index + 1}] راحة 6 دقائق`);
+      isResting = true;
+
+      await sleep(REST_TIME);
     }
-};
+  }
 
-service.on('ready', () => {
-    console.log(`✅ البوت متصل بنجاح: ${service.currentSubscriber.nickname}`);
-    manageWorkCycle(); 
+  service.on('ready', () => {
+    console.log(`✅ الحساب ${index + 1} جاهز`);
+    cycle();
+  });
+
+  service.login(acc.identity, acc.secret);
 });
-
-service.on('message', async (message) => {
-    if (!message.isGroup &&
-        (message.sourceSubscriberId === settings.targetBotId ||
-         message.authorId === settings.targetBotId)) {
-
-        const content =
-            message.body ||
-            message.content ||
-            message.text ||
-            message.message ||
-            "";
-
-        console.log("الرسالة المستلمة:", content);
-
-        const matches = [...content.matchAll(/\(([^)]*)\)/g)];
-
-        let roomId = null;
-
-        for (const m of matches) {
-            const digits = m[1].replace(/\D/g, '');
-
-            // نفترض أن رقم القناة طويل بينما رقم المستخدم أقصر
-            if (digits.length >= 6) {
-                roomId = parseInt(digits, 10);
-                break;
-            }
-        }
-
-        if (roomId) {
-            console.log(`📥 إضافة الروم ${roomId} إلى الطابور`);
-
-            heistQueue.push(roomId);
-
-            if (!isResting) {
-                processQueue();
-            } else {
-                console.log(
-                    `⏳ استراحة حالياً. سيتم معالجة الروم ${roomId} فور العودة للعمل.`
-                );
-            }
-        } else {
-            console.log("⚠️ لم يتم العثور على رقم قناة داخل الرسالة");
-        }
-    }
-});
-
-service.login(settings.identity, settings.secret);
