@@ -2,13 +2,9 @@
   "name": "wolf-bot-clean",
   "version": "1.0.0",
   "type": "module",
-  "description": "Clean wolf.js bot",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
-  },
-  "engines": {
-    "node": ">=20"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
