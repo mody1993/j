@@ -35,9 +35,7 @@ function extractRoomId(text = "") {
 // =====================
 // 🤖    شيل السطر تبع اف ويرجع يشتغل كل الحسابات كل حساب مستقل
 // =====================
-accounts.forEach((acc, index) => {
-if (index !== 10) return;
-  
+accounts.forEach((acc, index) => {  
   const service = new WOLF();
 
   // 📦 طابور + منع تكرار لكل حساب
