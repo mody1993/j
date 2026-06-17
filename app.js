@@ -4,14 +4,27 @@ import wolfjs from 'wolf.js';
 const { WOLF } = wolfjs;
 const client = new WOLF();
 
-// 🔴 عدّل هنا
+// 🔴 الإعدادات
 const ROOM_ID = 11194358;
-const ALLOWED_USER_ID = 26491704; // العضوية الوحيدة المسموح لها
+const ALLOWED_USER_ID = 26491704;
 
-client.on('ready', async () => {
-  console.log('✅ Logged In');
-
+async function start() {
   try {
+    console.log('🚀 Starting login...');
+
+    // ✅ تسجيل الدخول (هذا الناقص عندك)
+    await client.login({
+      email: process.env.U_MAIL_1,
+      password: process.env.U_PASS_1
+    });
+
+    console.log('✅ Logged In');
+
+    // ✅ دخول الغرفة
+    await client.rooms.join(ROOM_ID);
+    console.log('📥 Joined room');
+
+    // ✅ إرسال الرسالة
     await client.messaging.sendGroupMessage(
       ROOM_ID,
       '!ج'
@@ -20,34 +33,27 @@ client.on('ready', async () => {
     console.log('📤 Sent !ج');
 
   } catch (err) {
-    console.error('❌ Send error:', err);
+    console.error('❌ Error:', err);
   }
-});
+}
 
-// 👇 استقبال الرسائل مع فلترة عضو واحد فقط
-client.on('message', async (msg) => {
+start();
+
+// 👇 استقبال الرسائل (اختياري)
+client.on('message', (msg) => {
   try {
-
     const senderId =
       msg.sender?.id ||
       msg.sender ||
       msg.from ||
       msg.user;
 
-    // إذا ما قدر يحدد المرسل تجاهل
     if (!senderId) return;
-
-    // ❌ تجاهل أي شخص غير المسموح
     if (senderId !== ALLOWED_USER_ID) return;
 
-    console.log('✅ رسالة من العضو المسموح فقط:', msg.text || msg);
+    console.log('✅ Allowed user message:', msg.text);
 
-    // 🔥 ضع هنا منطق البوت الحقيقي
-    if (msg.text) {
-      console.log('📩 النص:', msg.text);
-    }
-
-  } catch (err) {
-    console.error('❌ Message error:', err);
+  } catch (e) {
+    console.error(e);
   }
 });
