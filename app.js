@@ -5,37 +5,16 @@ const { WOLF } = wolfjs;
 
 const client = new WOLF();
 
-// 🔧 إعداداتك
+// ================== CONFIG ==================
 const ROOM_ID = 215022;
-const ALLOWED_USER_ID = 26491704;
+const TARGET_USER_ID = 26491704;
 
-let waitForImage = false;
+let waitingForImage = false;
 
-// =========================
-// 🔐 LOGIN
-// =========================
-(async () => {
-  try {
-    console.log('🚀 Logging in...');
-
-    await client.login({
-      email: process.env.U_MAIL_1,
-      password: process.env.U_PASS_1
-    });
-
-    console.log('🔐 Logged in');
-
-  } catch (err) {
-    console.error('❌ Login error:', err);
-  }
-})();
-
-// =========================
-// 📤 READY → إرسال !ج
-// =========================
+// ================== LOGIN ==================
 client.on('ready', async () => {
   try {
-    console.log('✅ Ready');
+    console.log('✅ Logged in');
 
     await client.messaging.sendGroupMessage(
       ROOM_ID,
@@ -44,16 +23,14 @@ client.on('ready', async () => {
 
     console.log('📤 Sent !ج');
 
-    waitForImage = true;
+    waitingForImage = true;
 
   } catch (err) {
-    console.error('❌ Send error:', err);
+    console.error('❌ ready error:', err);
   }
 });
 
-// =========================
-// 🧠 تحليل الصورة (اسم فقط)
-// =========================
+// ================== IMAGE AI ==================
 async function analyzeImage(imageUrl) {
   try {
     const res = await fetch(
@@ -77,39 +54,67 @@ async function analyzeImage(imageUrl) {
   }
 }
 
-// =========================
-// 📩 استقبال الرسائل
-// =========================
-client.on('message', async (msg) => {
+// ================== HELPERS ==================
+function getImageUrl(message) {
+  return (
+    message.imageUrl ||
+    message.url ||
+    message?.attachment?.url ||
+    (typeof message.body === "string" && message.body.startsWith("http")
+      ? message.body
+      : null)
+  );
+}
+
+// ================== MAIN LISTENER ==================
+client.on('groupMessage', async (message) => {
   try {
-    const senderId =
-      msg?.sender?.id || msg?.sender || msg?.from || msg?.user;
 
-    if (senderId !== ALLOWED_USER_ID) return;
-    if (!waitForImage) return;
+    // 🔥 فلتر نفس الكود الشغال
+    if (
+      message.sourceSubscriberId !== TARGET_USER_ID ||
+      message.targetGroupId !== ROOM_ID
+    ) return;
 
-    const imageUrl =
-      msg?.image?.url ||
-      msg?.file?.url ||
-      msg?.attachment?.url ||
-      msg?.media?.url;
+    if (!waitingForImage) return;
 
-    if (!imageUrl) return;
+    console.log("========== NEW MESSAGE ==========");
 
-    console.log('🖼️ Image received');
+    const imageUrl = getImageUrl(message);
+
+    if (!imageUrl) {
+      console.log("❌ No image found");
+      return;
+    }
+
+    console.log("🖼️ Image URL:", imageUrl);
 
     const result = await analyzeImage(imageUrl);
 
-    console.log('🤖 Result:', result);
+    console.log("🤖 AI RESULT:", result);
 
     await client.messaging.sendGroupMessage(
       ROOM_ID,
       `🧠 ${result}`
     );
 
-    waitForImage = false;
+    waitingForImage = false;
 
   } catch (err) {
-    console.error('❌ Error:', err);
+    console.error('❌ error:', err);
   }
 });
+
+// ================== START ==================
+(async () => {
+  try {
+    await client.login(
+      process.env.U_MAIL_1,
+      process.env.U_PASS_1
+    );
+
+    console.log('🚀 Bot started');
+  } catch (err) {
+    console.error('❌ login error:', err);
+  }
+})();
