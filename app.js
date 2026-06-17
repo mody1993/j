@@ -4,8 +4,8 @@ import wolfjs from 'wolf.js';
 const { WOLF } = wolfjs;
 const client = new WOLF();
 
-const ROOM_ID = 123456;
-const GUESS_BOT_ID = 987654321;
+const ROOM_ID = 11194358;
+const GUESS_BOT_ID = 26491704;
 
 client.on('ready', async () => {
   console.log('✅ Logged In');
