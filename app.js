@@ -29,40 +29,51 @@ client.on('message', async (message) => {
 
   try {
 
-    // تجاهل أي شيء ليس من الروم المطلوب
-    if (!message.isGroup) return;
+    // اطبع أي رسالة تصل للمكتبة
+    console.log('====================');
+    console.log('EVENT RECEIVED');
+    console.log('TYPE:', message?.type);
+    console.log('SENDER:', message?.senderId);
+    console.log('GROUP:', message?.groupId);
+    console.log('IS_GROUP:', message?.isGroup);
+
+    // فلترة الروم
+    if (!message?.isGroup) return;
     if (message.groupId !== ROOM_ID) return;
 
-    // تجاهل أي شخص غير العضوية المحددة
+    // فلترة العضوية
     if (message.senderId !== TARGET_USER_ID) return;
 
-    console.log('\n========================');
-    console.log('📩 MESSAGE FROM TARGET');
-    console.log('========================');
-
-    console.log('TYPE:', message.type);
-    console.log('SENDER:', message.senderId);
+    console.log('✅ TARGET MESSAGE FOUND');
 
     if (message.body) {
       console.log('BODY:', message.body);
     }
 
     if (message.image) {
-      console.log('📷 IMAGE:');
-      console.dir(message.image, { depth: 5 });
+      console.log('📷 IMAGE');
+      console.dir(message.image, {
+        depth: 10,
+        colors: true
+      });
     }
 
     if (message.media) {
-      console.log('🎞 MEDIA:');
-      console.dir(message.media, { depth: 5 });
+      console.log('🎞 MEDIA');
+      console.dir(message.media, {
+        depth: 10,
+        colors: true
+      });
     }
 
     if (message.attachments) {
-      console.log('📎 ATTACHMENTS:');
-      console.dir(message.attachments, { depth: 5 });
+      console.log('📎 ATTACHMENTS');
+      console.dir(message.attachments, {
+        depth: 10,
+        colors: true
+      });
     }
 
-    // حفظ الرسالة في ملف
     fs.writeFileSync(
       'message.json',
       JSON.stringify(
@@ -75,13 +86,20 @@ client.on('message', async (message) => {
       )
     );
 
-    console.log('✅ Saved message.json');
+    console.log('✅ message.json saved');
 
   } catch (err) {
+
     console.error('❌ MESSAGE ERROR');
     console.error(err);
+
   }
 
+});
+
+client.on('error', (err) => {
+  console.error('❌ CLIENT ERROR');
+  console.error(err);
 });
 
 client.login(
