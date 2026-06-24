@@ -16,7 +16,7 @@ const START_COMMAND = '!وقت';
 // تعويض تأخير وولف
 // إذا النتيجة تطلع 0.12 ثانية متأخر، حط 120
 // إذا تبيه بدون تعويض، خله 0
-const SEND_LEAD_MS = 120;
+const SEND_LEAD_MS = 100;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
