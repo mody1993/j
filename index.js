@@ -4,11 +4,11 @@ import wolfjs from 'wolf.js';
 const { WOLF } = wolfjs;
 
 // ================== الإعدادات ==================
-const ROOM_ID = 18187126;
+const ROOM_ID = 81971125;
 
 // ID حسابك الثاني / البوت اللي يرسل رسالة:
 // اكتب {الان} بعد مرور 5 ثانية للفوز!
-const TARGET_USER_ID = 75423789;
+const TARGET_USER_ID = 26494626;
 
 // الأمر يرسل مرة واحدة فقط عند تشغيل البوت
 const START_COMMAND = '!وقت';
