@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "dotenv": "latest",
-    "wolf.js": "latest"
+    "wolf.js": "latest",
+    "openai": "latest"
   }
 }
